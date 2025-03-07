@@ -1,0 +1,9 @@
+{
+    "target": "esp32",
+    "builds": [
+        {
+            "name": "bread-compact-esp32-m5go",
+            "sdkconfig_append": []
+        }
+    ]
+}
