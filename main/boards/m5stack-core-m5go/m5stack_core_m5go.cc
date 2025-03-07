@@ -2,6 +2,7 @@
 #include "audio_codecs/no_audio_codec.h"
 #include "display/lcd_display.h"
 #include "application.h"
+#include "power_save_timer.h"
 #include "button.h"
 #include "config.h"
 #include "iot/thing_manager.h"
@@ -9,8 +10,9 @@
 #include <wifi_station.h>
 #include <esp_log.h>
 #include <driver/i2c_master.h>
+#include "i2c_device.h"
 #include <esp_lcd_panel_vendor.h>
-#include <driver/spi_common.h>
+//#include <driver/spi_common.h>
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_ili9341.h>
@@ -45,7 +47,6 @@ private:
         buscfg.max_transfer_sz = DISPLAY_WIDTH * DISPLAY_HEIGHT * sizeof(uint16_t);
         ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
     }
-
   
     void InitializeI2c() {
         ESP_LOGI(TAG, "Init I2C");
@@ -68,7 +69,7 @@ private:
     void InitializeIP5306() {
         ESP_LOGI(TAG, "Init IP5306");
         IP5306_ = new IP5306(i2c_bus, 0x75);
-    }    
+    }
 
     void InitializeIli9342Display() {
         ESP_LOGI(TAG, "Init IlI9342");
@@ -100,15 +101,14 @@ private:
         esp_lcd_panel_invert_color(panel, false);
         esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
         esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
-
-        display_ = new SpiLcdDisplay(panel_io, panel, DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT,
-                                    DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
-                                    {
-                                        .text_font = &font_puhui_20_4,
-                                        .icon_font = &font_awesome_20_4,
-                                        .emoji_font = font_emoji_64_init(),
-                                    });
-    }
+        display_ = new SpiLcdDisplay(panel_io, panel,
+            DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
+            {
+                .text_font = &font_puhui_20_4,
+                .icon_font = &font_awesome_20_4,
+                .emoji_font = font_emoji_64_init(),
+            });
+        }
 
 
     void InitializeButtons() {
@@ -171,6 +171,7 @@ public:
         InitializeSpi();
         InitializeIot();
         InitializeIli9342Display();
+        GetBacklight()->RestoreBrightness();
     }
 
     virtual Led* GetLed() override {
@@ -193,6 +194,11 @@ public:
     
     virtual Display* GetDisplay() override {
         return display_;
+    }
+
+    virtual Backlight* GetBacklight() override {
+        static PwmBacklight backlight(DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT);
+        return &backlight;
     }
 
     virtual bool GetBatteryLevel(int &level, bool& charging) override {
