@@ -100,6 +100,9 @@
   <a href="docs/v1/sensecap_watcher.jpg" target="_blank" title="SenseCAP Watcher">
     <img src="docs/v1/sensecap_watcher.jpg" width="240" />
   </a>
+  <a href="docs/m5stack-m5go.jpg" target="_blank" title="M5stack M5go">
+    <img src="docs/m5stack-m5go.jpg" width="240" />
+  </a>
 </div>
 
 ## 固件部分
